@@ -4,6 +4,8 @@ import android.content.Context;
 
 import java.io.File;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by xu on 2016/8/8.
@@ -92,6 +94,75 @@ public class LogCollector extends Thread{
             log2File.mkdirs();
         }
 //        FileHelper.
-        Runtime.getRuntime().exec("")
+    }
+    private void startLogCollect(){
+        List<String> command = new ArrayList<>();
+        command.add("logcat");
+        command.add("-v");
+        command.add("threadtime");
+        command.add("-f");
+        command.add(this.mLogFilePath);
+        command.add("-r");
+        command.add(String.valueOf(this.mLogFileSize));
+        command.add("-n");
+        command.add(String.valueOf(this.mLogFileNum));
+        try{
+            this.mLogProcess = Runtime.getRuntime().exec(command.toArray(new String[command.size()]));
+        }
+        catch (Exception e){
+            Logger.e("StartLog"+e.toString());
+        }
+    }
+    public  void launch(){
+        if(this.mlsSatrt){
+            return;
+        }
+        Logger.i("Launch.");
+        this.mlsSatrt=true;
+        this.start();
+    }
+    public void cancel(){
+        if(!mlsSatrt){
+            return;
+        }
+        Logger.i("CANCEL");
+        this.mlsSatrt=false;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                LogCollector.this.clearLogCache();
+            }
+        }).start();
+    }
+    public String getLogDir(){
+        return this.mLogFileRootDir;
+    }
+    private void clearLogCache(){
+        Process proc = null;
+        List<String> command = new ArrayList<>();
+        command.add("logcat");
+        command.add("-c");
+        try {
+            Thread.sleep(300);
+            if(null !=this.mLogProcess){
+                this.mLogProcess.destroy();
+                this.mLogProcess=null;
+            }
+
+        }
+        catch (Exception e){
+            Logger.i("ClearCache.");
+        }
+        finally {
+            try{
+                if (proc!=null){
+                    Thread.sleep(200);
+                    proc.destroy();
+                }
+            }
+            catch (Exception e){
+                Logger.e("ClearLogCache."+e.toString());
+            }
+        }
     }
 }
