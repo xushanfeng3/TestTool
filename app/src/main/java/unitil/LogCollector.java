@@ -76,7 +76,8 @@ public class LogCollector extends Thread{
 
     @Override
     public void run() {
-
+        this.initLogFileDir();
+        this.startLogCollect();
     }
     public void initLogFileDir(){
         File log0File = new File(this.mLogFileRootDir+"log0");
