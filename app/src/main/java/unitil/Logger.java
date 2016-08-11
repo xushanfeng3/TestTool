@@ -7,7 +7,7 @@ import android.text.TextUtils;
  */
 public final class Logger {
 
-    private static final String TAG = "Demo";
+    private static final String TAG = "logCollector";
 
     /**
      * Set true or false if you want read logs or not

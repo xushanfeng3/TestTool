@@ -11,7 +11,7 @@ import java.util.List;
  * Created by xu on 2016/8/8.
  */
 public class LogCollector extends Thread{
-    private static final String TAG = "logCollector";
+//    private static final String TAG = "logCollector";
     private static LogCollector sSingleeton;
 
     private final  String mLogFileRootDir;
@@ -34,7 +34,9 @@ public class LogCollector extends Thread{
             logFileSize=5;
         }
         this.mLogFileRootDir = logFile.getAbsolutePath()+File.separator;
+        Logger.e(this.mLogFileRootDir+"根目录");
         this.mLogFilePath = this.mLogFileRootDir+"Log.0"+File.separator+"logcat.log";
+        Logger.e(this.mLogFilePath+"文件目录");
         this.mLogFileSize = (long)(logFileSize*1024);
         this.mLogFileNum = logFileNum;
         this.mDecimalFormater = new DecimalFormat("##.##");
@@ -52,6 +54,7 @@ public class LogCollector extends Thread{
                         file.mkdirs();
                     }
                     sSingleeton = new LogCollector(path,10,9);
+                    Logger.e(path+"路径");
                 }
             }
         }
