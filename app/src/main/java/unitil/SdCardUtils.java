@@ -25,12 +25,12 @@ public class SdCardUtils {
             if (sdCardFile.exists()) {
                 File file = new File(sdCardFile.getAbsolutePath() + "/" + context.getPackageName());
                 if (file.exists()) {
-                    Logger.e(file.getAbsolutePath()+"ssss");
+                    Logger.e(TAG,file.getAbsolutePath()+"ssss");
                     return file.getAbsolutePath();
 
                 } else {
                     file.mkdirs();
-                    Logger.e(file.getAbsolutePath()+"ssssssss");
+                    Logger.e(TAG,file.getAbsolutePath()+"ssssssss");
                     return file.getAbsolutePath();
                 }
             }
@@ -49,16 +49,16 @@ public class SdCardUtils {
             if (sdCardFile.exists()) {
                 File file = new File(sdCardFile.getAbsolutePath() + "/" + "com.testTools.xu");
                 if (file.exists()) {
-                    Logger.e(file.getAbsolutePath()+"根目录");
+                    Logger.e(TAG,file.getAbsolutePath()+"根目录");
                     return file.getAbsolutePath();
                 } else {
                     file.mkdirs();
-                    Logger.e(file.getAbsolutePath()+"根目录");
+                    Logger.e(TAG,file.getAbsolutePath()+"根目录");
                     return file.getAbsolutePath();
                 }
             }
         }
-        Logger.e("根目录wrong");
+        Logger.e(TAG,"根目录wrong");
         return null;
     }
 
@@ -230,8 +230,8 @@ public class SdCardUtils {
             totalBlocks = statFs.getBlockCount();
             avaiableBlocks = statFs.getAvailableBlocks();
         }
-            Logger.e("总存储：" + Formatter.formatFileSize(context, blockSize * totalBlocks));
-            Logger.e("可用存储：" + Formatter.formatFileSize(context, blockSize * avaiableBlocks));
+            Logger.e(TAG,"总存储：" + Formatter.formatFileSize(context, blockSize * totalBlocks));
+            Logger.e(TAG,"可用存储：" + Formatter.formatFileSize(context, blockSize * avaiableBlocks));
         if (TYPE_COUNT == type) {
             return blockSize * totalBlocks;
         } else if (TYPE_AVAIABLE == type) {

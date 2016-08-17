@@ -1,6 +1,8 @@
 package unitil;
 
 import android.content.Context;
+import android.os.Environment;
+
 
 import java.io.File;
 import java.text.DecimalFormat;
@@ -10,71 +12,90 @@ import java.util.List;
 /**
  * Created by xu on 2016/8/8.
  */
-public class LogCollector extends Thread{
-//    private static final String TAG = "logCollector";
-    private static LogCollector sSingleeton;
+public class LogCollector extends Thread {
 
-    private final  String mLogFileRootDir;
+    private static final String TAG = "LogCollector";
+
+    private static LogCollector sSingleton;
+
+    private final String mLogFileRootDir;
     private final long mLogFileSize;
     private final int mLogFileNum;
     private final DecimalFormat mDecimalFormater;
+
     private Process mLogProcess;
-    private boolean mlsSatrt;
+    private boolean mIsStart;
     private final String mLogFilePath;
 
-    private LogCollector(String LogFileRootDir,float logFileSize,int logFileNum){
-        File logFile = new File(LogFileRootDir);
-        if(!logFile.exists()){
-            logFile.mkdir();
+    private LogCollector(String logFileRootDir, float logFileSize, int logFileNum) {
+        File logFile = new File(logFileRootDir);
+        if (!logFile.exists()) {
+            logFile.mkdirs();
         }
-        if(logFileNum<=0){
+        if (logFileSize <= 0) {
+            logFileSize = 5;
+        }
+        if (logFileNum <= 0) {
             logFileNum = 30;
         }
-        if(logFileSize<=0){
-            logFileSize=5;
-        }
-        this.mLogFileRootDir = logFile.getAbsolutePath()+File.separator;
-        Logger.e(this.mLogFileRootDir+"根目录");
-        this.mLogFilePath = this.mLogFileRootDir+"Log.0"+File.separator+"logcat.log";
-        Logger.e(this.mLogFilePath+"文件目录");
-        this.mLogFileSize = (long)(logFileSize*1024);
+        this.mLogFileRootDir = logFile.getAbsolutePath() + File.separator;
+        this.mLogFilePath = this.mLogFileRootDir + "Log.0" + File.separator + "logcat.log";
+        this.mLogFileSize = (long) (logFileSize * 1024);
         this.mLogFileNum = logFileNum;
         this.mDecimalFormater = new DecimalFormat("##.##");
     }
-    public static LogCollector getInstance(Context context){
-        if(context==null){
+
+    /**
+     * 日志文件默认保存在/sdcard/Android/packageName/files/cdeLogs/
+     *
+     * @param context
+     * @return
+     */
+    public static LogCollector getInstance(Context context) {
+        if (context == null) {
             throw new IllegalArgumentException();
         }
-        if(sSingleeton==null){
-            synchronized (LogCollector.class){
-                if(sSingleeton==null){
-                    String path = SdCardUtils.getSDCardRootPath(context)+File.separator+"cedlogs";
+
+        if (sSingleton == null) {
+            synchronized (LogCollector.class) {
+                if (sSingleton == null) {
+
+                    String path = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "Alogs";
+                    Logger.e(TAG,"SD卡根目录:"+path);
                     File file = new File(path);
-                    if(!file.exists()){
+                    if (!file.exists()) {
                         file.mkdirs();
                     }
-                    sSingleeton = new LogCollector(path,10,9);
-                    Logger.e(path+"路径");
+                    sSingleton = new LogCollector(path, 10, 9);
                 }
             }
         }
-        return sSingleeton;
+        return sSingleton;
     }
-    public static LogCollector getInstace(String logFileRootDir,float logFileSize,int logFileNum){
-        if(logFileRootDir==null){
+
+    /**
+     * @param logFileRootDir 日志文件根目录
+     * @param logFileSize    日志文件大小(单位M)
+     * @param logFileNum     日志文件数量
+     * @return
+     */
+    public static LogCollector getInstance(String logFileRootDir, float logFileSize, int logFileNum) {
+        if (StringUtils.isEmpty(logFileRootDir)) {
             throw new IllegalArgumentException();
         }
-        if(sSingleeton==null) {
+
+        if (sSingleton == null) {
             synchronized (LogCollector.class) {
-                if (sSingleeton == null) {
-                    sSingleeton = new LogCollector(logFileRootDir, logFileSize, logFileNum);
+                if (sSingleton == null) {
+                    sSingleton = new LogCollector(logFileRootDir, logFileSize, logFileNum);
                 }
             }
         }
-        return sSingleeton;
+        return sSingleton;
     }
-    public static LogCollector getInstance(){
-        return sSingleeton;
+
+    public static LogCollector getInstance() {
+        return sSingleton;
     }
 
     @Override
@@ -82,55 +103,67 @@ public class LogCollector extends Thread{
         this.initLogFileDir();
         this.startLogCollect();
     }
-    public void initLogFileDir(){
-        File log0File = new File(this.mLogFileRootDir+"log0");
-        if(!log0File.exists()){
+
+    private void initLogFileDir() {
+        File log0File = new File(this.mLogFileRootDir + "Log.0");
+        if (!log0File.exists()) {
             log0File.mkdirs();
             return;
         }
-        File log1File = new File(this.mLogFileRootDir+"log1");
-        if(!log1File.exists()){
-            log1File.mkdirs();
+
+        File log1File = new File(this.mLogFileRootDir + "Log.1");
+        if (!log1File.exists()) {
+            FileHelper.renameFile(log0File, log1File);
+            log0File.mkdirs();
             return;
         }
-        File log2File = new File(this.mLogFileRootDir+"log2");
-        if(!log2File.exists()){
-            log2File.mkdirs();
+
+        File log2File = new File(this.mLogFileRootDir + "Log.2");
+        if (log2File.exists()) {
+            FileHelper.deleteFileOrDir(log2File, false);
         }
-//        FileHelper.
+        FileHelper.renameFile(log1File, log2File);
+        FileHelper.renameFile(log0File, log1File);
+        log0File.mkdirs();
     }
-    private void startLogCollect(){
-        List<String> command = new ArrayList<>();
-        command.add("logcat");
-        command.add("-v");
-        command.add("threadtime");
-        command.add("-f");
-        command.add(this.mLogFilePath);
-        command.add("-r");
-        command.add(String.valueOf(this.mLogFileSize));
-        command.add("-n");
-        command.add(String.valueOf(this.mLogFileNum));
-        try{
-            this.mLogProcess = Runtime.getRuntime().exec(command.toArray(new String[command.size()]));
-        }
-        catch (Exception e){
-            Logger.e("StartLog"+e.toString());
+
+    private void startLogCollect() {
+        List<String> commandList = new ArrayList<String>();
+        commandList.add("logcat");
+        commandList.add("-v");
+        commandList.add("threadtime");
+        commandList.add("-f");
+        commandList.add(this.mLogFilePath);
+        commandList.add("-r");
+        commandList.add(String.valueOf(this.mLogFileSize));
+        commandList.add("-n");
+        commandList.add(String.valueOf(this.mLogFileNum));
+        try {
+            this.mLogProcess = Runtime.getRuntime().exec(commandList.toArray(new String[commandList.size()]));
+            Logger.i(TAG, "startLogCollect. each file size: %s, file max number: %s, file root dir: %s",
+                    StringUtils.formatSize(this.mDecimalFormater, this.mLogFileSize * 1024), this.mLogFileNum + 1, this.mLogFileRootDir);
+        } catch (Exception e) {
+            Logger.e(TAG, "startLogCollect. " + e.toString());
         }
     }
-    public  void launch(){
-        if(this.mlsSatrt){
+
+    public void launch() {
+        if (this.mIsStart) {
             return;
         }
-        Logger.i("Launch.");
-        this.mlsSatrt=true;
+
+        Logger.i(TAG, "launch.");
+        this.mIsStart = true;
         this.start();
     }
-    public void cancel(){
-        if(!mlsSatrt){
+
+    public void cancel() {
+        if (!this.mIsStart) {
             return;
         }
-        Logger.i("CANCEL");
-        this.mlsSatrt=false;
+
+        Logger.i(TAG, "cancel.");
+        this.mIsStart = false;
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -138,35 +171,37 @@ public class LogCollector extends Thread{
             }
         }).start();
     }
-    public String getLogDir(){
+
+    public String getLogDir() {
         return this.mLogFileRootDir;
     }
-    private void clearLogCache(){
+
+    private void clearLogCache() {
         Process proc = null;
-        List<String> command = new ArrayList<>();
-        command.add("logcat");
-        command.add("-c");
+        List<String> commandList = new ArrayList<String>();
+        commandList.add("logcat");
+        commandList.add("-c");
         try {
             Thread.sleep(300);
-            if(null !=this.mLogProcess){
+            if (null != this.mLogProcess) {
                 this.mLogProcess.destroy();
-                this.mLogProcess=null;
+                this.mLogProcess = null;
             }
 
-        }
-        catch (Exception e){
-            Logger.i("ClearCache.");
-        }
-        finally {
-            try{
-                if (proc!=null){
+            proc = Runtime.getRuntime().exec(commandList.toArray(new String[commandList.size()]));
+            Logger.i(TAG, "clearLogCache.");
+        } catch (Exception e) {
+            Logger.e(TAG, "clearLogCache. " + e.toString());
+        } finally {
+            try {
+                if (proc != null) {
                     Thread.sleep(200);
                     proc.destroy();
                 }
-            }
-            catch (Exception e){
-                Logger.e("ClearLogCache."+e.toString());
+            } catch (Exception e) {
+                Logger.e(TAG, "clearLogCache. " + e.toString());
             }
         }
     }
+
 }
